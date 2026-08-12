@@ -1,17 +1,26 @@
 import typer
 from src.targets.ollama_target import OllamaTarget
+from src.probe_loader import load_probes
 
 app = typer.Typer()
 
 @app.command()
-def scan(target: str = "ollama:dolphin-llama3", prompt: str = "Hello, who are you?"):
+def scan(target: str = "ollama:dolphin-llama3"):
     backend, model = target.split(":")
     if backend == "ollama":
         t = OllamaTarget(model=model)
     else:
         raise typer.BadParameter(f"Unsupported target backend: {backend}")
-    result = t.send(prompt)
-    typer.echo(result)
+
+    probes = load_probes()
+    typer.echo(f"Loaded {len(probes)} probes. Running scan against {target}...\n")
+
+    for probe in probes:
+        response = t.send(probe.payload)
+        typer.echo(f"    → {response[:150]}")
+        hit = probe.success_signature.lower() in response.lower()
+        status = "FAIL (vuln found)" if hit else "PASS"
+        typer.echo(f"[{probe.id}] {probe.category} — {status}")
 
 if __name__ == "__main__":
     app()
