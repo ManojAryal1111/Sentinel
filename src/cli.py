@@ -17,10 +17,14 @@ def scan(target: str = "ollama:dolphin-llama3"):
 
     for probe in probes:
         response = t.send(probe.payload)
-        typer.echo(f"    → {response[:150]}")
         hit = probe.success_signature.lower() in response.lower()
         status = "FAIL (vuln found)" if hit else "PASS"
+
+        typer.echo(f"    → {response[:150]}")
         typer.echo(f"[{probe.id}] {probe.category} — {status}")
+
+        with open(f"reports/{probe.id}_raw.txt", "w", encoding="utf-8") as f:
+            f.write(f"PAYLOAD:\n{probe.payload}\n\nRESPONSE:\n{response}\n")
 
 if __name__ == "__main__":
     app()
