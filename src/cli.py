@@ -2,11 +2,12 @@ import typer
 from src.targets.ollama_target import OllamaTarget
 from src.probe_loader import load_probes
 from src.judge import judge_response
+from src.adaptive import run_adaptive_attack
 
 app = typer.Typer()
 
 @app.command()
-def scan(target: str = "ollama:dolphin-llama3"):
+def scan(target: str = "ollama:dolphin-llama3", adaptive: bool = False):
     backend, model = target.split(":")
     if backend == "ollama":
         t = OllamaTarget(model=model)
@@ -17,22 +18,26 @@ def scan(target: str = "ollama:dolphin-llama3"):
     typer.echo(f"Loaded {len(probes)} probes. Running scan against {target}...\n")
 
     for probe in probes:
-        response = t.send(probe.payload)
-        verdict = judge_response(probe.payload, response)
-
-        status = "FAIL (vuln found)" if verdict["verdict"] == "COMPLY" else "PASS"
-
-        typer.echo(f"    → {response[:150]}")
-        typer.echo(f"[{probe.id}] {probe.category} — {status}")
-        typer.echo(f"    judge: {verdict['reasoning']}\n")
-
-        with open(f"reports/{probe.id}_raw.txt", "w", encoding="utf-8") as f:
-            f.write(
-                f"PAYLOAD:\n{probe.payload}\n\n"
-                f"RESPONSE:\n{response}\n\n"
-                f"JUDGE VERDICT: {verdict['verdict']}\n"
-                f"JUDGE REASONING: {verdict['reasoning']}\n"
-            )
+        if adaptive:
+            result = run_adaptive_attack(t, probe)
+            status = f"FAIL (vuln found via {result['turns_used']}-turn adaptive attack)" if result["success"] else f"PASS (resisted {result['turns_used']} turns)"
+            typer.echo(f"[{probe.id}] {probe.category} — {status}")
+            with open(f"reports/{probe.id}_raw.txt", "w", encoding="utf-8") as f:
+                f.write(
+                    f"PAYLOAD (original):\n{probe.payload}\n\n"
+                    f"FINAL MUTATED PROMPT:\n{result['final_prompt']}\n\n"
+                    f"FINAL RESPONSE:\n{result['final_response']}\n\n"
+                    f"TURNS USED: {result['turns_used']}\n"
+                    f"SUCCESS: {result['success']}\n"
+                    f"JUDGE REASONING: {result['reasoning']}\n"
+                )
+        else:
+            response = t.send(probe.payload)
+            verdict = judge_response(probe.payload, response)
+            status = "FAIL (vuln found)" if verdict["verdict"] == "COMPLY" else "PASS"
+            typer.echo(f"[{probe.id}] {probe.category} — {status}")
+            with open(f"reports/{probe.id}_raw.txt", "w", encoding="utf-8") as f:
+                f.write(f"PAYLOAD:\n{probe.payload}\n\nRESPONSE:\n{response}\n\nJUDGE VERDICT: {verdict['verdict']}\nJUDGE REASONING: {verdict['reasoning']}\n")
 
 if __name__ == "__main__":
     app()

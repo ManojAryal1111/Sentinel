@@ -2,6 +2,7 @@ from src.judge import judge_response
 from src.attacker import mutate_prompt
 
 def run_adaptive_attack(target, probe, max_turns: int = 4):
+    original_payload = probe.payload
     current_prompt = probe.payload
 
     for turn in range(max_turns):
@@ -20,7 +21,7 @@ def run_adaptive_attack(target, probe, max_turns: int = 4):
             }
 
         print(f"  Turn {turn + 1}: refused, mutating...")
-        current_prompt = mutate_prompt(current_prompt, response)
+        current_prompt = mutate_prompt(original_payload, current_prompt, response)
 
     return {
         "success": False,
