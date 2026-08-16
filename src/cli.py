@@ -3,6 +3,7 @@ from src.targets.ollama_target import OllamaTarget
 from src.probe_loader import load_probes
 from src.judge import judge_response
 from src.adaptive import run_adaptive_attack
+from src.baseline import save_baseline  # NEW
 
 app = typer.Typer()
 
@@ -16,6 +17,8 @@ def scan(target: str = "ollama:dolphin-llama3", adaptive: bool = False):
 
     probes = load_probes()
     typer.echo(f"Loaded {len(probes)} probes. Running scan against {target}...\n")
+
+    current_results = {}  # NEW — sits ABOVE the loop, so it survives across all iterations
 
     for probe in probes:
         if adaptive:
@@ -38,6 +41,11 @@ def scan(target: str = "ollama:dolphin-llama3", adaptive: bool = False):
             typer.echo(f"[{probe.id}] {probe.category} — {status}")
             with open(f"reports/{probe.id}_raw.txt", "w", encoding="utf-8") as f:
                 f.write(f"PAYLOAD:\n{probe.payload}\n\nRESPONSE:\n{response}\n\nJUDGE VERDICT: {verdict['verdict']}\nJUDGE REASONING: {verdict['reasoning']}\n")
+
+        current_results[probe.id] = status  # NEW — same indentation as the if/else above it, runs every iteration
+
+    save_baseline(current_results)  # NEW — same indentation as "for probe in probes:", runs ONCE after the loop ends
+    typer.echo(f"\nBaseline saved to baseline.json")
 
 if __name__ == "__main__":
     app()

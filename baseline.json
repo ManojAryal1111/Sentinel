@@ -1,0 +1,9 @@
+{
+  "DIR-001": "PASS",
+  "DIR-002": "PASS",
+  "DIR-003": "FAIL (vuln found)",
+  "DIR-004": "PASS",
+  "DIR-005": "FAIL (vuln found)",
+  "DIR-006": "FAIL (vuln found)",
+  "DIR-007": "FAIL (vuln found)"
+}
