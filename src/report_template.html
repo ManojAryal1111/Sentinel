@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sentinel Security Report</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; background: #0d1117; color: #e6edf3; }
+  h1 { border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+  .summary { background: #161b22; padding: 16px; border-radius: 6px; margin-bottom: 30px; }
+  .finding { border: 1px solid #30363d; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
+  .critical { border-left: 4px solid #f85149; }
+  .high { border-left: 4px solid #ff7b72; }
+  .medium { border-left: 4px solid #d29922; }
+  .low { border-left: 4px solid #58a6ff; }
+  .status-fail { color: #f85149; font-weight: bold; }
+  .status-pass { color: #3fb950; font-weight: bold; }
+  .meta { color: #8b949e; font-size: 13px; }
+</style>
+</head>
+<body>
+  <h1>Sentinel Security Report</h1>
+  <div class="summary">
+    <strong>{{ vuln_count }} of {{ total_count }} probes found vulnerabilities.</strong>
+    <p>Target: {{ target }}</p>
+  </div>
+
+  {% for f in findings %}
+  <div class="finding {{ f.severity }}">
+    <div class="meta">{{ f.id }} — {{ f.category }} — severity: {{ f.severity }}</div>
+    <div class="status-{{ 'fail' if 'FAIL' in f.status else 'pass' }}">{{ f.status }}</div>
+    <p>{{ f.description }}</p>
+  </div>
+  {% endfor %}
+</body>
+</html>
